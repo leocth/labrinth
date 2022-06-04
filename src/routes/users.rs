@@ -58,17 +58,14 @@ pub async fn user_get(
     let id_option: Option<UserId> =
         serde_json::from_str(&*format!("\"{}\"", string)).ok();
 
-    let mut user_data;
-
-    if let Some(id) = id_option {
-        user_data = User::get(id.into(), &**pool).await?;
-
-        if user_data.is_none() {
-            user_data = User::get_from_username(string, &**pool).await?;
+    let user_data = if let Some(id) = id_option {
+        match User::get(id.into(), &**pool).await? {
+            Some(u) => Some(u),
+            None => User::get_from_username(string, &**pool).await?,
         }
     } else {
-        user_data = User::get_from_username(string, &**pool).await?;
-    }
+        User::get_from_username(string, &**pool).await?
+    };
 
     if let Some(data) = user_data {
         let response: crate::models::users::User = data.into();

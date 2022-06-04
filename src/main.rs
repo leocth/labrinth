@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use crate::file_hosting::S3Host;
 use crate::ratelimit::errors::ARError;
 use crate::ratelimit::memory::{MemoryStore, MemoryStoreActor};

@@ -179,10 +179,11 @@ pub async fn auth_callback(
             .json()
             .await?;
 
-        let user = get_github_user_from_token(&*token.access_token).await?;
+        let user = get_github_user_from_token(&token.access_token).await?;
 
         let user_result =
             User::get_from_github_id(user.id, &mut *transaction).await?;
+        
         match user_result {
             Some(_) => {}
             None => {

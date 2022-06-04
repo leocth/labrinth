@@ -735,22 +735,19 @@ pub async fn upload_file(
                             });
                         }
                     }
-                } else {
-                    if let Some(first_download) = file.downloads.first() {
-                        dependencies.push(DependencyBuilder {
-                            project_id: None,
-                            version_id: None,
-                            file_name: Some(
-                                first_download
-                                    .rsplit('/')
-                                    .next()
-                                    .unwrap_or(first_download)
-                                    .to_string(),
-                            ),
-                            dependency_type: DependencyType::Required
+                } else if let Some(first_download) = file.downloads.first() {
+                    dependencies.push(DependencyBuilder {
+                        project_id: None,
+                        version_id: None,
+                        file_name: Some(
+                            first_download
+                                .rsplit('/')
+                                .next()
+                                .unwrap_or(first_download)
                                 .to_string(),
-                        });
-                    }
+                        ),
+                        dependency_type: DependencyType::Required.to_string(),
+                    });
                 }
             }
         }

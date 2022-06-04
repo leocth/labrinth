@@ -181,11 +181,11 @@ pub async fn search_for_project(
         if let Some(new_filters) = info.new_filters.as_deref() {
             query.with_filter(new_filters);
         } else {
-            let facets = if let Some(facets) = &info.facets {
-                Some(serde_json::from_str::<Vec<Vec<&str>>>(facets)?)
-            } else {
-                None
-            };
+            let facets = info
+                .facets
+                .as_deref()
+                .map(serde_json::from_str::<Vec<Vec<&str>>>)
+                .transpose()?;
 
             let filters: Cow<_> =
                 match (info.filters.as_deref(), info.version.as_deref()) {

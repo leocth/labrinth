@@ -147,8 +147,7 @@ fn game_version_supported(
                 all_game_versions
                     .iter()
                     .find(|y| y.version == x.0)
-                    .map(|x| x.date > before && x.date < after)
-                    .unwrap_or(false)
+                    .map_or(false, |x| x.date > before && x.date < after)
             })
         }
         SupportedGameVersions::Custom(versions) => {
