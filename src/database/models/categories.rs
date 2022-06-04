@@ -542,11 +542,9 @@ impl GameVersion {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres>,
     {
-        let result;
-
-        if let Some(version_type) = version_type_option {
+        let result = if let Some(version_type) = version_type_option {
             if let Some(major) = major_option {
-                result = sqlx::query!(
+                sqlx::query!(
                     "
                     SELECT gv.id id, gv.version version_, gv.type type_, gv.created created, gv.major major FROM game_versions gv
                     WHERE major = $1 AND type = $2
@@ -564,9 +562,9 @@ impl GameVersion {
                         major: c.major,
                     })) })
                 .try_collect::<Vec<GameVersion>>()
-                .await?;
+                .await?
             } else {
-                result = sqlx::query!(
+                sqlx::query!(
                     "
                     SELECT gv.id id, gv.version version_, gv.type type_, gv.created created, gv.major major FROM game_versions gv
                     WHERE type = $1
@@ -583,10 +581,10 @@ impl GameVersion {
                         major: c.major,
                     })) })
                 .try_collect::<Vec<GameVersion>>()
-                .await?;
+                .await?
             }
         } else if let Some(major) = major_option {
-            result = sqlx::query!(
+            sqlx::query!(
                 "
                 SELECT gv.id id, gv.version version_, gv.type type_, gv.created created, gv.major major FROM game_versions gv
                 WHERE major = $1
@@ -603,10 +601,10 @@ impl GameVersion {
                     major: c.major,
                 })) })
             .try_collect::<Vec<GameVersion>>()
-            .await?;
+            .await?
         } else {
-            result = Vec::new();
-        }
+            vec![]
+        };
 
         Ok(result)
     }
@@ -1123,10 +1121,7 @@ impl ReportType {
 
 impl<'a> ReportTypeBuilder<'a> {
     /// The name of the report type.  Must be ASCII alphanumeric or `-`/`_`
-    pub fn name(
-        mut self,
-        name: &'a str,
-    ) -> Result<Self, DatabaseError> {
+    pub fn name(mut self, name: &'a str) -> Result<Self, DatabaseError> {
         if name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')

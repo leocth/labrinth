@@ -1,4 +1,5 @@
 use super::ApiError;
+use crate::database::models::VersionId;
 use crate::database::models::{version_item::QueryVersion, DatabaseError};
 use crate::file_hosting::FileHost;
 use crate::models::projects::{GameVersion, Loader, Version};
@@ -7,7 +8,7 @@ use crate::util::auth::get_user_from_headers;
 use crate::util::routes::ok_or_not_found;
 use crate::{database, models};
 use actix_web::{delete, get, post, web, HttpRequest, HttpResponse};
-use futures::stream::TryStreamExt;
+use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::collections::HashMap;
@@ -429,35 +430,13 @@ pub async fn update_files(
         .fetch_all(&mut *transaction)
         .await?;
 
-    let mut version_ids = Vec::new();
-
-    for row in &result {
-        let updated_versions = database::models::Version::get_project_versions(
-            database::models::ProjectId(row.project_id),
-            Some(
-                update_data
-                    .game_versions
-                    .clone()
-                    .iter()
-                    .map(|x| x.0.clone())
-                    .collect(),
-            ),
-            Some(
-                update_data
-                    .loaders
-                    .clone()
-                    .iter()
-                    .map(|x| x.0.clone())
-                    .collect(),
-            ),
-            &**pool,
-        )
+    let version_ids: Vec<_> = futures::stream::iter(result.iter())
+        .then(|row| get_version_ids(row.project_id, &update_data, &pool))
+        .try_filter_map(|mut updated_versions| async move {
+            Ok(updated_versions.pop())
+        })
+        .try_collect()
         .await?;
-
-        if let Some(latest_version) = updated_versions.last() {
-            version_ids.push(*latest_version);
-        }
-    }
 
     let versions =
         database::models::Version::get_many_full(version_ids, &**pool).await?;
@@ -483,4 +462,32 @@ pub async fn update_files(
     }
 
     Ok(HttpResponse::Ok().json(response))
+}
+
+async fn get_version_ids(
+    project_id: i64,
+    update_data: &ManyUpdateData,
+    pool: &PgPool,
+) -> Result<Vec<VersionId>, sqlx::Error> {
+    database::models::Version::get_project_versions(
+        database::models::ProjectId(project_id),
+        Some(
+            update_data
+                .game_versions
+                .clone()
+                .iter()
+                .map(|x| x.0.clone())
+                .collect(),
+        ),
+        Some(
+            update_data
+                .loaders
+                .clone()
+                .iter()
+                .map(|x| x.0.clone())
+                .collect(),
+        ),
+        pool,
+    )
+    .await
 }

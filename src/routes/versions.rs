@@ -69,7 +69,7 @@ pub async fn version_list(
             .map(Version::from)
             .collect::<Vec<_>>();
 
-        versions.sort_by(|a, b| b.date_published.cmp(&a.date_published));
+        versions.sort_by_key(|ver| ver.date_published);
 
         // Attempt to populate versions with "auto featured" versions
         if response.is_empty()
@@ -85,28 +85,28 @@ pub async fn version_list(
                 )
             )?;
 
-            for (version, loader) in game_versions.iter().zip(loaders.iter()) {
-                let ver = versions
-                    .iter()
-                    .find(|v| {
-                        v.game_versions.contains(&version.version)
-                            && v.loaders.contains(&loader.loader)
-                    });
-
-                if let Some(ver) = ver {
-                    response.push(Version::from(ver.clone()));
-                }
-            }
+            response.extend(
+                game_versions.iter().zip(loaders.iter()).filter_map(
+                    |(version, loader)| {
+                        versions
+                            .iter()
+                            .find(|v| {
+                                v.game_versions.contains(&version.version)
+                                    && v.loaders.contains(&loader.loader)
+                            })
+                            .cloned()
+                            .map(Version::from)
+                    },
+                ),
+            );
 
             if response.is_empty() {
-                versions
-                    .into_iter()
-                    .for_each(|version| response.push(Version::from(version)));
+                response.extend(versions.into_iter().map(Version::from));
             }
         }
 
-        response.sort_by(|a, b| b.date_published.cmp(&a.date_published));
-        response.dedup_by(|a, b| a.id == b.id);
+        response.sort_by_key(|resp| resp.date_published);
+        response.dedup_by_key(|resp| resp.id);
 
         Ok(HttpResponse::Ok().json(response))
     } else {

@@ -76,7 +76,7 @@ impl FileHost for S3Host {
                     "Error while uploading file to S3".to_string(),
                 )
             })?;
-        
+
         #[allow(clippy::cast_possible_truncation)]
         let content_length = file_bytes.len() as u32;
 

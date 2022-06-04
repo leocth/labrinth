@@ -222,13 +222,14 @@ pub async fn search_for_project(
                     //
                     // this produces a filter string that looks like
                     // {filter_string} AND ({filter_string})
-                    // instead of 
+                    // instead of
                     // {filter_string} AND ({filters})
-                    // 
+                    //
                     // meilisearch works in mysterious ways
-                    
+
                     #[allow(clippy::format_push_string)]
-                    filter_string.push_str(&format!(" AND ({})", filter_string));
+                    filter_string
+                        .push_str(&format!(" AND ({})", filter_string));
                 }
             } else {
                 filter_string.push_str(&*filters);

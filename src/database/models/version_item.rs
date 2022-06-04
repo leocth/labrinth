@@ -491,7 +491,6 @@ impl Version {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres>,
     {
-
         let vec = sqlx::query!(
             "
             SELECT version.id FROM (
@@ -562,7 +561,6 @@ impl Version {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-
         let version_ids_parsed: Vec<i64> =
             version_ids.into_iter().map(|x| x.0).collect();
         let versions = sqlx::query!(

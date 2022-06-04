@@ -160,9 +160,9 @@ pub mod base62_impl {
 
     pub fn to_base62(mut num: u64) -> String {
         // this is OK since this is just an estimated length
-        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)] 
+        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
         let length = (num as f64).log(62.0).ceil() as usize;
-        
+
         let mut output = String::with_capacity(length);
 
         while num > 0 {

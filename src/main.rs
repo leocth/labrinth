@@ -6,7 +6,7 @@
     clippy::too_many_lines,
     clippy::cast_sign_loss,
     clippy::cast_possible_wrap,
-    clippy::option_option,
+    clippy::option_option
 )]
 
 use crate::file_hosting::S3Host;

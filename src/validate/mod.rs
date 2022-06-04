@@ -110,7 +110,7 @@ pub async fn validate_file(
                 visited = true;
                 break;
             }
-        };
+        }
 
         if visited {
             Err(ValidationError::InvalidInput(

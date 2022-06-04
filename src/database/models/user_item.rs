@@ -162,7 +162,6 @@ impl User {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-
         let user_ids_parsed: Vec<i64> =
             user_ids.into_iter().map(|x| x.0).collect();
         let users = sqlx::query!(
@@ -202,7 +201,6 @@ impl User {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-
         let projects = sqlx::query!(
             "
             SELECT m.id FROM mods m
@@ -227,7 +225,6 @@ impl User {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-
         let projects = sqlx::query!(
             "
             SELECT m.id FROM mods m
