@@ -206,16 +206,17 @@ pub async fn add_team_member(
     .await?;
 
     if let Some(req) = request {
-        if req.accepted {
-            return Err(ApiError::InvalidInput(
+        let err = if req.accepted {
+            ApiError::InvalidInput(
                 "The user is already a member of that team".to_string(),
-            ));
+            )
         } else {
-            return Err(ApiError::InvalidInput(
+            ApiError::InvalidInput(
                 "There is already a pending member request for this user"
                     .to_string(),
-            ));
-        }
+            )
+        };
+        return Err(err);
     }
 
     crate::database::models::User::get(member.user_id, &**pool)

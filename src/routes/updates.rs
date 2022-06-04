@@ -10,6 +10,12 @@ use crate::util::auth::{get_user_from_headers, is_authorized};
 
 use super::ApiError;
 
+#[derive(Serialize)]
+struct ForgeUpdates {
+    homepage: String,
+    promos: HashMap<String, String>,
+}
+
 #[get("{id}/forge_updates.json")]
 pub async fn forge_updates(
     req: HttpRequest,
@@ -43,12 +49,6 @@ pub async fn forge_updates(
     let mut versions =
         database::models::Version::get_many_full(version_ids, &**pool).await?;
     versions.sort_by(|a, b| b.date_published.cmp(&a.date_published));
-
-    #[derive(Serialize)]
-    struct ForgeUpdates {
-        homepage: String,
-        promos: HashMap<String, String>,
-    }
 
     let mut response = ForgeUpdates {
         homepage: format!(

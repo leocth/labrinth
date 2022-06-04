@@ -11,7 +11,7 @@ use crate::util::auth::{get_user_from_headers, is_authorized};
 use crate::util::routes::read_from_payload;
 use crate::util::validate::validation_errors_to_string;
 use actix_web::{delete, get, patch, post, web, HttpRequest, HttpResponse};
-use futures::StreamExt;
+use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Row};
 use std::sync::Arc;
@@ -41,7 +41,7 @@ pub async fn projects_get(
     let project_ids =
         serde_json::from_str::<Vec<models::ids::ProjectId>>(&*ids.ids)?
             .into_iter()
-            .map(|x| x.into())
+            .map(Into::into)
             .collect();
 
     let projects_data =
@@ -114,8 +114,6 @@ pub async fn dependency_list(
         }
 
         let id = project.inner.id;
-
-        use futures::stream::TryStreamExt;
 
         //TODO: This query is not checked at compile time! Once SQLX parses this query correctly, please use the query! macro instead
         let dependencies = sqlx::query(
@@ -298,15 +296,14 @@ pub async fn project_edit(
             &**pool,
         )
         .await?;
-        let permissions;
 
-        if let Some(member) = team_member {
-            permissions = Some(member.permissions)
+        let permissions = if let Some(member) = team_member {
+            Some(member.permissions)
         } else if user.role.is_mod() {
-            permissions = Some(Permissions::ALL)
+            Some(Permissions::ALL)
         } else {
-            permissions = None
-        }
+            None
+        };
 
         if let Some(perms) = permissions {
             let mut transaction = pool.begin().await?;
@@ -1470,39 +1467,39 @@ pub async fn project_follow(
     .exists
     .unwrap_or(false);
 
-    if !following {
-        let mut transaction = pool.begin().await?;
-
-        sqlx::query!(
-            "
-            UPDATE mods
-            SET follows = follows + 1
-            WHERE id = $1
-            ",
-            project_id as database::models::ids::ProjectId,
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        sqlx::query!(
-            "
-            INSERT INTO mod_follows (follower_id, mod_id)
-            VALUES ($1, $2)
-            ",
-            user_id as database::models::ids::UserId,
-            project_id as database::models::ids::ProjectId
-        )
-        .execute(&mut *transaction)
-        .await?;
-
-        transaction.commit().await?;
-
-        Ok(HttpResponse::NoContent().body(""))
-    } else {
-        Err(ApiError::InvalidInput(
+    if following {
+        return Err(ApiError::InvalidInput(
             "You are already following this project!".to_string(),
-        ))
+        ));
     }
+
+    let mut transaction = pool.begin().await?;
+
+    sqlx::query!(
+        "
+        UPDATE mods
+        SET follows = follows + 1
+        WHERE id = $1
+        ",
+        project_id as database::models::ids::ProjectId,
+    )
+    .execute(&mut *transaction)
+    .await?;
+
+    sqlx::query!(
+        "
+        INSERT INTO mod_follows (follower_id, mod_id)
+        VALUES ($1, $2)
+        ",
+        user_id as database::models::ids::UserId,
+        project_id as database::models::ids::ProjectId
+    )
+    .execute(&mut *transaction)
+    .await?;
+
+    transaction.commit().await?;
+
+    Ok(HttpResponse::NoContent().body(""))
 }
 
 #[delete("{id}/follow")]

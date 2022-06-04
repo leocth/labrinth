@@ -38,18 +38,21 @@ pub enum AuthorizationError {
 impl actix_web::ResponseError for AuthorizationError {
     fn status_code(&self) -> StatusCode {
         match self {
-            AuthorizationError::Env(..) => StatusCode::INTERNAL_SERVER_ERROR,
-            AuthorizationError::SqlxDatabase(..) => {
+            AuthorizationError::Env(..)
+            | AuthorizationError::SqlxDatabase(..)
+            | AuthorizationError::Database(..) => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
-            AuthorizationError::Database(..) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-            AuthorizationError::SerDe(..) => StatusCode::BAD_REQUEST,
+
+            AuthorizationError::SerDe(..)
+            | AuthorizationError::Decoding(..) => StatusCode::BAD_REQUEST,
+
             AuthorizationError::Github(..) => StatusCode::FAILED_DEPENDENCY,
-            AuthorizationError::InvalidCredentials => StatusCode::UNAUTHORIZED,
-            AuthorizationError::Decoding(..) => StatusCode::BAD_REQUEST,
-            AuthorizationError::Authentication(..) => StatusCode::UNAUTHORIZED,
+
+            AuthorizationError::InvalidCredentials
+            | AuthorizationError::Authentication(..) => {
+                StatusCode::UNAUTHORIZED
+            }
         }
     }
 
@@ -57,8 +60,8 @@ impl actix_web::ResponseError for AuthorizationError {
         HttpResponse::build(self.status_code()).json(ApiError {
             error: match self {
                 AuthorizationError::Env(..) => "environment_error",
-                AuthorizationError::SqlxDatabase(..) => "database_error",
-                AuthorizationError::Database(..) => "database_error",
+                AuthorizationError::SqlxDatabase(..)
+                | AuthorizationError::Database(..) => "database_error",
                 AuthorizationError::SerDe(..) => "invalid_input",
                 AuthorizationError::Github(..) => "github_error",
                 AuthorizationError::InvalidCredentials => "invalid_credentials",
@@ -183,7 +186,7 @@ pub async fn auth_callback(
 
         let user_result =
             User::get_from_github_id(user.id, &mut *transaction).await?;
-        
+
         match user_result {
             Some(_) => {}
             None => {

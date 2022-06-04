@@ -1,4 +1,5 @@
 use super::ids::*;
+use futures::TryStreamExt;
 use time::OffsetDateTime;
 
 #[derive(Clone, Debug)]
@@ -298,8 +299,6 @@ impl Project {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-        use futures::stream::TryStreamExt;
-
         let project_ids_parsed: Vec<i64> =
             project_ids.into_iter().map(|x| x.0).collect();
         let projects = sqlx::query!(
@@ -429,7 +428,6 @@ impl Project {
         .execute(&mut *transaction)
         .await?;
 
-        use futures::TryStreamExt;
         let versions: Vec<VersionId> = sqlx::query!(
             "
             SELECT id FROM versions

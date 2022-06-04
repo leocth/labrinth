@@ -192,38 +192,22 @@ pub enum ApiError {
 impl actix_web::ResponseError for ApiError {
     fn status_code(&self) -> actix_web::http::StatusCode {
         match self {
-            ApiError::Env(..) => {
+            ApiError::Xml(..)
+            | ApiError::Search(..)
+            | ApiError::Indexing(..)
+            | ApiError::FileHosting(..)
+            | ApiError::Env(..)
+            | ApiError::Database(..)
+            | ApiError::SqlxDatabase(..) => {
                 actix_web::http::StatusCode::INTERNAL_SERVER_ERROR
             }
-            ApiError::Database(..) => {
-                actix_web::http::StatusCode::INTERNAL_SERVER_ERROR
-            }
-            ApiError::SqlxDatabase(..) => {
-                actix_web::http::StatusCode::INTERNAL_SERVER_ERROR
-            }
-            ApiError::Authentication(..) => {
+            ApiError::Authentication(..)
+            | ApiError::CustomAuthentication(..) => {
                 actix_web::http::StatusCode::UNAUTHORIZED
             }
-            ApiError::CustomAuthentication(..) => {
-                actix_web::http::StatusCode::UNAUTHORIZED
-            }
-            ApiError::Xml(..) => {
-                actix_web::http::StatusCode::INTERNAL_SERVER_ERROR
-            }
-            ApiError::Json(..) => actix_web::http::StatusCode::BAD_REQUEST,
-            ApiError::Search(..) => {
-                actix_web::http::StatusCode::INTERNAL_SERVER_ERROR
-            }
-            ApiError::Indexing(..) => {
-                actix_web::http::StatusCode::INTERNAL_SERVER_ERROR
-            }
-            ApiError::FileHosting(..) => {
-                actix_web::http::StatusCode::INTERNAL_SERVER_ERROR
-            }
-            ApiError::InvalidInput(..) => {
-                actix_web::http::StatusCode::BAD_REQUEST
-            }
-            ApiError::Validation(..) => {
+            ApiError::Json(..)
+            | ApiError::InvalidInput(..)
+            | ApiError::Validation(..) => {
                 actix_web::http::StatusCode::BAD_REQUEST
             }
         }
@@ -234,17 +218,19 @@ impl actix_web::ResponseError for ApiError {
             crate::models::error::ApiError {
                 error: match self {
                     ApiError::Env(..) => "environment_error",
-                    ApiError::SqlxDatabase(..) => "database_error",
-                    ApiError::Database(..) => "database_error",
-                    ApiError::Authentication(..) => "unauthorized",
-                    ApiError::CustomAuthentication(..) => "unauthorized",
+                    ApiError::SqlxDatabase(..) | ApiError::Database(..) => {
+                        "database_error"
+                    }
+                    ApiError::Authentication(..)
+                    | ApiError::CustomAuthentication(..) => "unauthorized",
                     ApiError::Xml(..) => "xml_error",
                     ApiError::Json(..) => "json_error",
                     ApiError::Search(..) => "search_error",
                     ApiError::Indexing(..) => "indexing_error",
                     ApiError::FileHosting(..) => "file_hosting_error",
-                    ApiError::InvalidInput(..) => "invalid_input",
-                    ApiError::Validation(..) => "invalid_input",
+                    ApiError::InvalidInput(..) | ApiError::Validation(..) => {
+                        "invalid_input"
+                    }
                 },
                 description: &self.to_string(),
             },

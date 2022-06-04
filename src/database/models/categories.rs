@@ -50,7 +50,7 @@ pub struct DonationPlatform {
 
 pub struct CategoryBuilder<'a> {
     pub name: Option<&'a str>,
-    pub project_type: Option<&'a ProjectTypeId>,
+    pub project_type: Option<ProjectTypeId>,
     pub icon: Option<&'a str>,
 }
 
@@ -194,10 +194,7 @@ impl Category {
 
 impl<'a> CategoryBuilder<'a> {
     /// The name of the category.  Must be ASCII alphanumeric or `-`/`_`
-    pub fn name(
-        self,
-        name: &'a str,
-    ) -> Result<CategoryBuilder<'a>, DatabaseError> {
+    pub fn name(self, name: &'a str) -> Result<Self, DatabaseError> {
         if name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
@@ -211,24 +208,18 @@ impl<'a> CategoryBuilder<'a> {
         }
     }
 
-    pub fn project_type(
-        self,
-        project_type: &'a ProjectTypeId,
-    ) -> Result<CategoryBuilder<'a>, DatabaseError> {
-        Ok(Self {
+    pub fn project_type(self, project_type: ProjectTypeId) -> Self {
+        Self {
             project_type: Some(project_type),
             ..self
-        })
+        }
     }
 
-    pub fn icon(
-        self,
-        icon: &'a str,
-    ) -> Result<CategoryBuilder<'a>, DatabaseError> {
-        Ok(Self {
+    pub fn icon(self, icon: &'a str) -> Self {
+        Self {
             icon: Some(icon),
             ..self
-        })
+        }
     }
 
     pub async fn insert<'b, E>(
@@ -238,7 +229,7 @@ impl<'a> CategoryBuilder<'a> {
     where
         E: sqlx::Executor<'b, Database = sqlx::Postgres>,
     {
-        let id = *self.project_type.ok_or_else(|| {
+        let id = self.project_type.ok_or_else(|| {
             DatabaseError::Other("No project type specified.".to_string())
         })?;
         let result = sqlx::query!(
@@ -344,7 +335,7 @@ impl Loader {
                     .project_types
                     .unwrap_or_default()
                     .iter()
-                    .map(|x| x.to_string())
+                    .map(ToString::to_string)
                     .collect(),
             }))
         })
@@ -383,10 +374,7 @@ impl Loader {
 
 impl<'a> LoaderBuilder<'a> {
     /// The name of the loader.  Must be ASCII alphanumeric or `-`/`_`
-    pub fn name(
-        self,
-        name: &'a str,
-    ) -> Result<LoaderBuilder<'a>, DatabaseError> {
+    pub fn name(self, name: &'a str) -> Result<Self, DatabaseError> {
         if name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
@@ -400,24 +388,21 @@ impl<'a> LoaderBuilder<'a> {
         }
     }
 
-    pub fn icon(
-        self,
-        icon: &'a str,
-    ) -> Result<LoaderBuilder<'a>, DatabaseError> {
-        Ok(Self {
+    pub fn icon(self, icon: &'a str) -> Self {
+        Self {
             icon: Some(icon),
             ..self
-        })
+        }
     }
 
     pub fn supported_project_types(
         self,
         supported_project_types: &'a [ProjectTypeId],
-    ) -> Result<LoaderBuilder<'a>, DatabaseError> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             supported_project_types: Some(supported_project_types),
             ..self
-        })
+        }
     }
 
     pub async fn insert(
@@ -852,14 +837,11 @@ impl<'a> LicenseBuilder<'a> {
     }
 
     /// The license's long name
-    pub fn name(
-        self,
-        name: &'a str,
-    ) -> Result<LicenseBuilder<'a>, DatabaseError> {
-        Ok(Self {
+    pub fn name(self, name: &'a str) -> Self {
+        Self {
             name: Some(name),
             ..self
-        })
+        }
     }
 
     pub async fn insert<'b, E>(
@@ -994,10 +976,7 @@ impl DonationPlatform {
 
 impl<'a> DonationPlatformBuilder<'a> {
     /// The donation platform short name.  Spaces must be replaced with '_' for it to be valid
-    pub fn short(
-        self,
-        short: &'a str,
-    ) -> Result<DonationPlatformBuilder<'a>, DatabaseError> {
+    pub fn short(self, short: &'a str) -> Result<Self, DatabaseError> {
         if short
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || "-_.".contains(c))
@@ -1012,14 +991,11 @@ impl<'a> DonationPlatformBuilder<'a> {
     }
 
     /// The donation platform long name
-    pub fn name(
-        self,
-        name: &'a str,
-    ) -> Result<DonationPlatformBuilder<'a>, DatabaseError> {
-        Ok(Self {
+    pub fn name(self, name: &'a str) -> Self {
+        Self {
             name: Some(name),
             ..self
-        })
+        }
     }
 
     pub async fn insert<'b, E>(
@@ -1148,14 +1124,15 @@ impl ReportType {
 impl<'a> ReportTypeBuilder<'a> {
     /// The name of the report type.  Must be ASCII alphanumeric or `-`/`_`
     pub fn name(
-        self,
+        mut self,
         name: &'a str,
-    ) -> Result<ReportTypeBuilder<'a>, DatabaseError> {
+    ) -> Result<Self, DatabaseError> {
         if name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
         {
-            Ok(Self { name: Some(name) })
+            self.name = Some(name);
+            Ok(self)
         } else {
             Err(DatabaseError::InvalidIdentifier(name.to_string()))
         }
@@ -1313,15 +1290,13 @@ impl ProjectType {
 
 impl<'a> ProjectTypeBuilder<'a> {
     /// The name of the project type.  Must be ASCII alphanumeric or `-`/`_`
-    pub fn name(
-        self,
-        name: &'a str,
-    ) -> Result<ProjectTypeBuilder<'a>, DatabaseError> {
+    pub fn name(mut self, name: &'a str) -> Result<Self, DatabaseError> {
         if name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
         {
-            Ok(Self { name: Some(name) })
+            self.name = Some(name);
+            Ok(self)
         } else {
             Err(DatabaseError::InvalidIdentifier(name.to_string()))
         }

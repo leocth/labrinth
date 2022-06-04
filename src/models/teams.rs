@@ -24,6 +24,7 @@ pub struct Team {
 
 bitflags::bitflags! {
     #[derive(Serialize, Deserialize)]
+    #[allow(clippy::unsafe_derive_deserialize)] // bit silly really
     #[serde(transparent)]
     pub struct Permissions: u64 {
         const UPLOAD_VERSION = 1 << 0;

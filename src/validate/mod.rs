@@ -43,8 +43,9 @@ pub enum ValidationResult {
 impl ValidationResult {
     pub fn is_passed(&self) -> bool {
         match self {
-            ValidationResult::PassWithPackData(_) => true,
-            ValidationResult::Pass => true,
+            ValidationResult::PassWithPackData(_) | ValidationResult::Pass => {
+                true
+            }
             ValidationResult::Warning(_) => false,
         }
     }
@@ -105,11 +106,11 @@ pub async fn validate_file(
             {
                 if validator.get_file_extensions().contains(&&*file_extension) {
                     return validator.validate(&mut zip);
-                } else {
-                    visited = true;
                 }
+                visited = true;
+                break;
             }
-        }
+        };
 
         if visited {
             Err(ValidationError::InvalidInput(
@@ -138,8 +139,7 @@ fn game_version_supported(
                 all_game_versions
                     .iter()
                     .find(|y| y.version == x.0)
-                    .map(|x| x.date > date)
-                    .unwrap_or(false)
+                    .map_or(false, |x| x.date > date)
             })
         }
         SupportedGameVersions::Range(before, after) => {
@@ -154,4 +154,8 @@ fn game_version_supported(
             versions.iter().any(|x| game_versions.contains(x))
         }
     }
+}
+
+fn match_extension_ignore_case(name: &str, exts: &[&str]) -> bool {
+    exts.iter().any(|ext| name.rfind(ext).is_some())
 }

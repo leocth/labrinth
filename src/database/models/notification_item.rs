@@ -52,17 +52,17 @@ impl NotificationBuilder {
         for user in users {
             let id = generate_notification_id(&mut *transaction).await?;
 
-            let mut actions = Vec::new();
-
-            for action in &self.actions {
-                actions.push(NotificationAction {
+            let actions: Vec<_> = self
+                .actions
+                .iter()
+                .map(|action| NotificationAction {
                     id: NotificationActionId(0),
                     notification_id: id,
                     title: action.title.clone(),
                     action_route_method: action.action_route.0.clone(),
                     action_route: action.action_route.1.clone(),
                 })
-            }
+                .collect();
 
             Notification {
                 id,

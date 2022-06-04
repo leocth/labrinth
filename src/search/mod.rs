@@ -30,10 +30,10 @@ impl actix_web::ResponseError for SearchError {
     fn status_code(&self) -> StatusCode {
         match self {
             SearchError::Env(..) => StatusCode::INTERNAL_SERVER_ERROR,
-            SearchError::MeiliSearch(..) => StatusCode::BAD_REQUEST,
-            SearchError::Serde(..) => StatusCode::BAD_REQUEST,
-            SearchError::IntParsing(..) => StatusCode::BAD_REQUEST,
-            SearchError::InvalidIndex(..) => StatusCode::BAD_REQUEST,
+            SearchError::MeiliSearch(..)
+            | SearchError::Serde(..)
+            | SearchError::IntParsing(..)
+            | SearchError::InvalidIndex(..) => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -42,9 +42,9 @@ impl actix_web::ResponseError for SearchError {
             error: match self {
                 SearchError::Env(..) => "environment_error",
                 SearchError::MeiliSearch(..) => "meilisearch_error",
-                SearchError::Serde(..) => "invalid_input",
-                SearchError::IntParsing(..) => "invalid_input",
-                SearchError::InvalidIndex(..) => "invalid_input",
+                SearchError::Serde(..)
+                | SearchError::IntParsing(..)
+                | SearchError::InvalidIndex(..) => "invalid_input",
             },
             description: &self.to_string(),
         })
@@ -65,6 +65,7 @@ impl SearchConfig {
 
 /// A project document used for uploading projects to MeiliSearch's indices.
 /// This contains some extra data that is not returned by search results.
+#[allow(clippy::doc_markdown)] // false positive
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UploadSearchProject {
     pub project_id: String,
@@ -204,20 +205,30 @@ pub async fn search_for_project(
                         filter_string.push_str(&facet.replace(':', " = "));
 
                         if facet_index != (facet_list.len() - 1) {
-                            filter_string.push_str(" OR ")
+                            filter_string.push_str(" OR ");
                         }
                     }
 
                     filter_string.push(')');
 
                     if index != (facets.len() - 1) {
-                        filter_string.push_str(" AND ")
+                        filter_string.push_str(" AND ");
                     }
                 }
                 filter_string.push(')');
 
                 if !filters.is_empty() {
-                    filter_string.push_str(&format!(" AND ({})", filter_string))
+                    // NOTE(leocth): apparently, this is intentional.
+                    //
+                    // this produces a filter string that looks like
+                    // {filter_string} AND ({filter_string})
+                    // instead of 
+                    // {filter_string} AND ({filters})
+                    // 
+                    // meilisearch works in mysterious ways
+                    
+                    #[allow(clippy::format_push_string)]
+                    filter_string.push_str(&format!(" AND ({})", filter_string));
                 }
             } else {
                 filter_string.push_str(&*filters);

@@ -45,8 +45,8 @@ pub async fn category_create(
 
     let _id = Category::builder()
         .name(&name)?
-        .icon(DEFAULT_ICON)?
-        .project_type(&project_type)?
+        .icon(DEFAULT_ICON)
+        .project_type(project_type)
         .insert(&**pool)
         .await?;
 
@@ -84,10 +84,10 @@ pub async fn loader_create(
 
     let _id = Loader::builder()
         .name(&name)?
-        .icon(DEFAULT_ICON)?
+        .icon(DEFAULT_ICON)
         .supported_project_types(
             &*project_types.into_iter().map(|x| x.id).collect::<Vec<_>>(),
-        )?
+        )
         .insert(&mut transaction)
         .await?;
 

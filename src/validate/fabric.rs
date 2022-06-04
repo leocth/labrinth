@@ -5,6 +5,8 @@ use std::io::Cursor;
 use time::OffsetDateTime;
 use zip::ZipArchive;
 
+use super::match_extension_ignore_case;
+
 pub struct FabricValidator;
 
 impl super::Validator for FabricValidator {
@@ -38,7 +40,7 @@ impl super::Validator for FabricValidator {
         })?;
 
         if !archive.file_names().any(|name| {
-            name.ends_with("refmap.json") || name.ends_with(".class")
+            match_extension_ignore_case(name, &[".refmap.json", ".class"])
         }) {
             return Ok(ValidationResult::Warning(
                 "Fabric mod file is a source file!",

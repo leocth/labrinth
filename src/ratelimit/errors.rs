@@ -6,7 +6,7 @@ use thiserror::Error;
 
 /// Custom error type. Useful for logging and debugging different kinds of errors.
 /// This type can be converted to Actix Error, which defaults to
-/// InternalServerError
+/// `InternalServerError`
 ///
 #[derive(Debug, Error)]
 pub enum ARError {

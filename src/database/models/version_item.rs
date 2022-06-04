@@ -1,5 +1,6 @@
 use super::ids::*;
 use super::DatabaseError;
+use futures::TryStreamExt;
 use std::collections::HashMap;
 use time::OffsetDateTime;
 
@@ -198,8 +199,6 @@ impl VersionBuilder {
 
         // Sync dependencies
 
-        use futures::stream::TryStreamExt;
-
         let dependencies = sqlx::query!(
             "
             SELECT d.id id
@@ -214,7 +213,7 @@ impl VersionBuilder {
         )
             .fetch_many(&mut *transaction)
             .try_filter_map(|e| async {
-                Ok(e.right().map(|d| d.id as i64))
+                Ok(e.right().map(|d| i64::from(d.id)))
             })
             .try_collect::<Vec<i64>>()
             .await?;
@@ -313,8 +312,6 @@ impl Version {
         .execute(&mut *transaction)
         .await?;
 
-        use futures::TryStreamExt;
-
         let game_versions: Vec<i32> = sqlx::query!(
             "
                 SELECT game_version_id id FROM game_versions_versions
@@ -387,7 +384,7 @@ impl Version {
                 file.id.0,
                 file.url,
                 file.filename
-            )
+            );
         }
 
         sqlx::query!(
@@ -494,7 +491,6 @@ impl Version {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres>,
     {
-        use futures::stream::TryStreamExt;
 
         let vec = sqlx::query!(
             "
@@ -566,7 +562,6 @@ impl Version {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-        use futures::stream::TryStreamExt;
 
         let version_ids_parsed: Vec<i64> =
             version_ids.into_iter().map(|x| x.0).collect();

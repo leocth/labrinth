@@ -68,31 +68,31 @@ pub enum CreateError {
 impl actix_web::ResponseError for CreateError {
     fn status_code(&self) -> StatusCode {
         match self {
-            CreateError::EnvError(..) => StatusCode::INTERNAL_SERVER_ERROR,
-            CreateError::SqlxDatabaseError(..) => {
+            CreateError::EnvError(..)
+            | CreateError::SqlxDatabaseError(..)
+            | CreateError::DatabaseError(..)
+            | CreateError::IndexingError(..)
+            | CreateError::FileHostingError(..) => {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
-            CreateError::DatabaseError(..) => StatusCode::INTERNAL_SERVER_ERROR,
-            CreateError::IndexingError(..) => StatusCode::INTERNAL_SERVER_ERROR,
-            CreateError::FileHostingError(..) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-            CreateError::SerDeError(..) => StatusCode::BAD_REQUEST,
-            CreateError::MultipartError(..) => StatusCode::BAD_REQUEST,
-            CreateError::MissingValueError(..) => StatusCode::BAD_REQUEST,
-            CreateError::InvalidIconFormat(..) => StatusCode::BAD_REQUEST,
-            CreateError::InvalidInput(..) => StatusCode::BAD_REQUEST,
-            CreateError::InvalidGameVersion(..) => StatusCode::BAD_REQUEST,
-            CreateError::InvalidLoader(..) => StatusCode::BAD_REQUEST,
-            CreateError::InvalidCategory(..) => StatusCode::BAD_REQUEST,
-            CreateError::InvalidFileType(..) => StatusCode::BAD_REQUEST,
-            CreateError::Unauthorized(..) => StatusCode::UNAUTHORIZED,
-            CreateError::CustomAuthenticationError(..) => {
+
+            CreateError::SerDeError(..)
+            | CreateError::MultipartError(..)
+            | CreateError::MissingValueError(..)
+            | CreateError::InvalidIconFormat(..)
+            | CreateError::InvalidInput(..)
+            | CreateError::InvalidGameVersion(..)
+            | CreateError::InvalidLoader(..)
+            | CreateError::InvalidCategory(..)
+            | CreateError::InvalidFileType(..)
+            | CreateError::SlugCollision
+            | CreateError::ValidationError(..)
+            | CreateError::FileValidationError(..) => StatusCode::BAD_REQUEST,
+
+            CreateError::Unauthorized(..)
+            | CreateError::CustomAuthenticationError(..) => {
                 StatusCode::UNAUTHORIZED
             }
-            CreateError::SlugCollision => StatusCode::BAD_REQUEST,
-            CreateError::ValidationError(..) => StatusCode::BAD_REQUEST,
-            CreateError::FileValidationError(..) => StatusCode::BAD_REQUEST,
         }
     }
 
@@ -100,24 +100,24 @@ impl actix_web::ResponseError for CreateError {
         HttpResponse::build(self.status_code()).json(ApiError {
             error: match self {
                 CreateError::EnvError(..) => "environment_error",
-                CreateError::SqlxDatabaseError(..) => "database_error",
-                CreateError::DatabaseError(..) => "database_error",
+                CreateError::SqlxDatabaseError(..)
+                | CreateError::DatabaseError(..) => "database_error",
                 CreateError::IndexingError(..) => "indexing_error",
                 CreateError::FileHostingError(..) => "file_hosting_error",
-                CreateError::SerDeError(..) => "invalid_input",
-                CreateError::MultipartError(..) => "invalid_input",
-                CreateError::MissingValueError(..) => "invalid_input",
-                CreateError::InvalidIconFormat(..) => "invalid_input",
-                CreateError::InvalidInput(..) => "invalid_input",
-                CreateError::InvalidGameVersion(..) => "invalid_input",
-                CreateError::InvalidLoader(..) => "invalid_input",
-                CreateError::InvalidCategory(..) => "invalid_input",
-                CreateError::InvalidFileType(..) => "invalid_input",
-                CreateError::Unauthorized(..) => "unauthorized",
-                CreateError::CustomAuthenticationError(..) => "unauthorized",
-                CreateError::SlugCollision => "invalid_input",
-                CreateError::ValidationError(..) => "invalid_input",
-                CreateError::FileValidationError(..) => "invalid_input",
+                CreateError::SerDeError(..)
+                | CreateError::MultipartError(..)
+                | CreateError::MissingValueError(..)
+                | CreateError::InvalidIconFormat(..)
+                | CreateError::InvalidInput(..)
+                | CreateError::InvalidGameVersion(..)
+                | CreateError::InvalidLoader(..)
+                | CreateError::InvalidCategory(..)
+                | CreateError::InvalidFileType(..)
+                | CreateError::SlugCollision
+                | CreateError::ValidationError(..)
+                | CreateError::FileValidationError(..) => "invalid_input",
+                CreateError::Unauthorized(..)
+                | CreateError::CustomAuthenticationError(..) => "unauthorized",
             },
             description: &self.to_string(),
         })
@@ -325,15 +325,14 @@ pub async fn project_create_inner(
         // The first multipart field must be named "data" and contain a
         // JSON `ProjectCreateData` object.
 
-        let mut field = payload
-            .next()
-            .await
-            .map(|m| m.map_err(CreateError::MultipartError))
-            .unwrap_or_else(|| {
+        let mut field = payload.next().await.map_or_else(
+            || {
                 Err(CreateError::MissingValueError(String::from(
                     "No `data` field in multipart upload",
                 )))
-            })?;
+            },
+            |m| m.map_err(CreateError::MultipartError),
+        )?;
 
         let content_disposition = field.content_disposition();
         let name = content_disposition.get_name().ok_or_else(|| {
@@ -406,7 +405,7 @@ pub async fn project_create_inner(
         for (i, data) in create_data.initial_versions.iter().enumerate() {
             // Create a map of multipart field names to version indices
             for name in &data.file_parts {
-                if versions_map.insert(name.to_owned(), i).is_some() {
+                if versions_map.insert(name.clone(), i).is_some() {
                     // If the name is already used
                     return Err(CreateError::InvalidInput(String::from(
                         "Duplicate multipart field name",
@@ -679,7 +678,7 @@ pub async fn project_create_inner(
                     platform_short: "".to_string(),
                     platform_name: "".to_string(),
                     url: url.url.clone(),
-                })
+                });
             }
         }
 
@@ -829,8 +828,8 @@ async fn create_initial_version(
         .dependencies
         .iter()
         .map(|d| models::version_item::DependencyBuilder {
-            version_id: d.version_id.map(|x| x.into()),
-            project_id: d.project_id.map(|x| x.into()),
+            version_id: d.version_id.map(Into::into),
+            project_id: d.project_id.map(Into::into),
             dependency_type: d.dependency_type.to_string(),
             file_name: None,
         })

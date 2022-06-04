@@ -78,7 +78,7 @@ pub async fn index_local(
                         server_side: m.server_side_type,
                         slug: m.slug,
                         project_type: m.project_type_name,
-                        gallery: m.gallery.map(|x| x.split(',').map(|x| x.to_string()).collect()).unwrap_or_default()
+                        gallery: m.gallery.map(|x| x.split(',').map(ToString::to_string).collect()).unwrap_or_default()
                     }
                 }))
             })

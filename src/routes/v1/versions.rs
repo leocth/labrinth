@@ -164,7 +164,7 @@ pub async fn versions_get(
     let version_ids =
         serde_json::from_str::<Vec<models::ids::VersionId>>(&*ids.ids)?
             .into_iter()
-            .map(|x| x.into())
+            .map(Into::into)
             .collect();
     let versions_data =
         database::models::Version::get_many_full(version_ids, &**pool).await?;

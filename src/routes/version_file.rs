@@ -7,6 +7,7 @@ use crate::util::auth::get_user_from_headers;
 use crate::util::routes::ok_or_not_found;
 use crate::{database, models};
 use actix_web::{delete, get, post, web, HttpRequest, HttpResponse};
+use futures::stream::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::collections::HashMap;
@@ -154,8 +155,6 @@ pub async fn delete_file(
             }
         }
 
-        use futures::stream::TryStreamExt;
-
         let files = sqlx::query!(
             "
             SELECT f.id id FROM files f
@@ -249,7 +248,7 @@ pub async fn get_update_from_hash(
     .fetch_optional(&**pool)
     .await?;
 
-    if let Some(id) = result {
+    let response = if let Some(id) = result {
         let version_ids = database::models::Version::get_project_versions(
             database::models::ProjectId(id.project_id),
             Some(
@@ -279,11 +278,13 @@ pub async fn get_update_from_hash(
 
             ok_or_not_found::<QueryVersion, Version>(version_data)
         } else {
-            Ok(HttpResponse::NotFound().body(""))
+            HttpResponse::NotFound().body("")
         }
     } else {
-        Ok(HttpResponse::NotFound().body(""))
-    }
+        HttpResponse::NotFound().body("")
+    };
+
+    Ok(response)
 }
 
 // Requests above with multiple versions below

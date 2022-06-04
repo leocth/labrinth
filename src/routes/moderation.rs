@@ -3,6 +3,7 @@ use crate::database;
 use crate::models::projects::ProjectStatus;
 use crate::util::auth::check_is_moderator_from_headers;
 use actix_web::{get, web, HttpRequest, HttpResponse};
+use futures::TryStreamExt;
 use serde::Deserialize;
 use sqlx::PgPool;
 
@@ -24,8 +25,6 @@ pub async fn get_projects(
 ) -> Result<HttpResponse, ApiError> {
     check_is_moderator_from_headers(req.headers(), &**pool).await?;
 
-    use futures::stream::TryStreamExt;
-
     let project_ids = sqlx::query!(
         "
         SELECT id FROM mods
@@ -36,7 +35,7 @@ pub async fn get_projects(
         LIMIT $2;
         ",
         ProjectStatus::Processing.as_str(),
-        count.count as i64
+        i64::from(count.count)
     )
     .fetch_many(&**pool)
     .try_filter_map(|e| async {

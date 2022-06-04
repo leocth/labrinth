@@ -159,7 +159,10 @@ pub mod base62_impl {
         *b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
     pub fn to_base62(mut num: u64) -> String {
+        // this is OK since this is just an estimated length
+        #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)] 
         let length = (num as f64).log(62.0).ceil() as usize;
+        
         let mut output = String::with_capacity(length);
 
         while num > 0 {
@@ -174,16 +177,15 @@ pub mod base62_impl {
     pub fn parse_base62(string: &str) -> Result<u64, DecodingError> {
         let mut num: u64 = 0;
         for c in string.chars() {
-            let next_digit;
-            if c.is_ascii_digit() {
-                next_digit = (c as u8 - b'0') as u64;
+            let next_digit = u64::from(if c.is_ascii_digit() {
+                c as u8 - b'0'
             } else if c.is_ascii_uppercase() {
-                next_digit = 10 + (c as u8 - b'A') as u64;
+                10 + (c as u8 - b'A')
             } else if c.is_ascii_lowercase() {
-                next_digit = 36 + (c as u8 - b'a') as u64;
+                36 + (c as u8 - b'a')
             } else {
                 return Err(DecodingError::InvalidBase62(c));
-            }
+            });
 
             // We don't want this panicking or wrapping on integer overflow
             if let Some(n) =

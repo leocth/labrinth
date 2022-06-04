@@ -31,10 +31,14 @@ impl FileHost for MockHost {
             format!("{:x}", sha2::Sha512::digest(&*file_bytes));
 
         std::fs::write(path, &*file_bytes)?;
+
+        #[allow(clippy::cast_possible_truncation)]
+        let content_length = file_bytes.len() as u32;
+
         Ok(UploadFileData {
             file_id: String::from("MOCK_FILE_ID"),
             file_name: file_name.to_string(),
-            content_length: file_bytes.len() as u32,
+            content_length,
             content_sha512,
             content_sha1,
             content_md5: None,

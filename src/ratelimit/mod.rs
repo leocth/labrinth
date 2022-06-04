@@ -8,7 +8,7 @@ use actix::dev::*;
 
 pub mod errors;
 pub mod memory;
-/// The code for this module was directly taken from https://github.com/TerminalWitchcraft/actix-ratelimit
+/// The code for this module was directly taken from <https://github.com/TerminalWitchcraft/actix-ratelimit>
 /// with some modifications including upgrading it to Actix 4!
 pub mod middleware;
 
@@ -58,7 +58,7 @@ where
 {
     fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<Self>>) {
         if let Some(tx) = tx {
-            let _ = tx.send(self);
+            let _ignored = tx.send(self);
         }
     }
 }

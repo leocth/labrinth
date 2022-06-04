@@ -112,7 +112,7 @@ where
     }
 }
 
-/// Service factory for RateLimiter
+/// Service factory for `RateLimiter`
 pub struct RateLimitMiddleware<S, T>
 where
     S: 'static,
@@ -159,8 +159,8 @@ where
             let identifier: String = (identifier)(&req)?;
             if ignore_ips.contains(&identifier) {
                 let fut = srv.call(req);
-                let res = fut.await?;
-                return Ok(res);
+                let result = fut.await?;
+                return Ok(result);
             }
             let remaining: ActorResponse = store
                 .send(ActorMessage::Get(String::from(&identifier)))
@@ -195,7 +195,7 @@ where
                             .into())
                         } else {
                             // Decrement value
-                            let res: ActorResponse = store
+                            let resp: ActorResponse = store
                                 .send(ActorMessage::Update {
                                     key: identifier,
                                     value: 1,
@@ -206,14 +206,14 @@ where
                                         "Decrementing ratelimit".to_string(),
                                     )
                                 })?;
-                            let updated_value: usize = match res {
+                            let updated_value: usize = match resp {
                                 ActorResponse::Update(c) => c.await?,
                                 _ => unreachable!(),
                             };
                             // Execute the request
                             let fut = srv.call(req);
-                            let mut res = fut.await?;
-                            let headers = res.headers_mut();
+                            let mut result = fut.await?;
+                            let headers = result.headers_mut();
                             // Safe unwraps, since usize is always convertible to string
                             headers.insert(
                                 HeaderName::from_static("x-ratelimit-limit"),
@@ -235,12 +235,12 @@ where
                                     reset.as_secs().to_string().as_str(),
                                 )?,
                             );
-                            Ok(res)
+                            Ok(result)
                         }
                     } else {
                         // New client, create entry in store
                         let current_value = max_requests - 1;
-                        let res = store
+                        let result = store
                             .send(ActorMessage::Set {
                                 key: String::from(&identifier),
                                 value: current_value,
@@ -252,13 +252,13 @@ where
                                     "Creating store entry".to_string(),
                                 )
                             })?;
-                        match res {
+                        match result {
                             ActorResponse::Set(c) => c.await?,
                             _ => unreachable!(),
                         }
                         let fut = srv.call(req);
-                        let mut res = fut.await?;
-                        let headers = res.headers_mut();
+                        let mut result = fut.await?;
+                        let headers = result.headers_mut();
                         // Safe unwraps, since usize is always convertible to string
                         headers.insert(
                             HeaderName::from_static("x-ratelimit-limit"),
@@ -281,7 +281,7 @@ where
                             )
                             .unwrap(),
                         );
-                        Ok(res)
+                        Ok(result)
                     }
                 }
                 _ => {

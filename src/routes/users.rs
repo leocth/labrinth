@@ -8,6 +8,7 @@ use crate::util::auth::get_user_from_headers;
 use crate::util::routes::read_from_payload;
 use crate::util::validate::validation_errors_to_string;
 use actix_web::{delete, get, patch, web, HttpRequest, HttpResponse};
+use futures::TryStreamExt;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -38,7 +39,7 @@ pub async fn users_get(
 ) -> Result<HttpResponse, ApiError> {
     let user_ids = serde_json::from_str::<Vec<UserId>>(&*ids.ids)?
         .into_iter()
-        .map(|x| x.into())
+        .map(Into::into)
         .collect();
 
     let users_data = User::get_many(user_ids, &**pool).await?;
@@ -449,8 +450,6 @@ pub async fn user_follows(
                 "You do not have permission to see the projects this user follows!".to_string(),
             ));
         }
-
-        use futures::TryStreamExt;
 
         let project_ids = sqlx::query!(
             "

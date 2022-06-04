@@ -18,11 +18,11 @@ pub async fn notifications_get(
     web::Query(ids): web::Query<NotificationIds>,
     pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, ApiError> {
-    let user = get_user_from_headers(req.headers(), &**pool).await?;
-
     // TODO: this is really confusingly named.
     use database::models::notification_item::Notification as DBNotification;
     use database::models::NotificationId as DBNotificationId;
+
+    let user = get_user_from_headers(req.headers(), &**pool).await?;
 
     let notification_ids: Vec<DBNotificationId> =
         serde_json::from_str::<Vec<NotificationId>>(ids.ids.as_str())?
@@ -126,7 +126,7 @@ pub async fn notifications_delete(
     let notification_ids =
         serde_json::from_str::<Vec<NotificationId>>(&*ids.ids)?
             .into_iter()
-            .map(|x| x.into())
+            .map(Into::into)
             .collect();
 
     let mut transaction = pool.begin().await?;
@@ -138,14 +138,11 @@ pub async fn notifications_delete(
         )
         .await?;
 
-    let mut notifications: Vec<database::models::ids::NotificationId> =
-        Vec::new();
-
-    for notification in notifications_data {
-        if notification.user_id == user.id.into() || user.role.is_mod() {
-            notifications.push(notification.id);
-        }
-    }
+    let notifications: Vec<_> = notifications_data
+        .into_iter()
+        .filter(|n| n.user_id == user.id.into() || user.role.is_mod())
+        .map(|n| n.id)
+        .collect();
 
     database::models::notification_item::Notification::remove_many(
         notifications,

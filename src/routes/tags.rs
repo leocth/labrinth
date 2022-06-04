@@ -82,8 +82,8 @@ pub async fn category_create(
 
     let _id = Category::builder()
         .name(&new_category.name)?
-        .project_type(&project_type)?
-        .icon(&new_category.icon)?
+        .project_type(project_type)
+        .icon(&new_category.icon)
         .insert(&**pool)
         .await?;
 
@@ -160,10 +160,10 @@ pub async fn loader_create(
 
     let _id = Loader::builder()
         .name(&new_loader.name)?
-        .icon(&new_loader.icon)?
+        .icon(&new_loader.icon)
         .supported_project_types(
             &*project_types.into_iter().map(|x| x.id).collect::<Vec<_>>(),
-        )?
+        )
         .insert(&mut transaction)
         .await?;
 
@@ -338,7 +338,7 @@ pub async fn license_create(
 
     let _id = License::builder()
         .short(&short)?
-        .name(&license_data.name)?
+        .name(&license_data.name)
         .insert(&**pool)
         .await?;
 
@@ -411,7 +411,7 @@ pub async fn donation_platform_create(
 
     let _id = DonationPlatform::builder()
         .short(&short)?
-        .name(&license_data.name)?
+        .name(&license_data.name)
         .insert(&**pool)
         .await?;
 

@@ -5,6 +5,8 @@ use std::io::Cursor;
 use time::OffsetDateTime;
 use zip::ZipArchive;
 
+use super::match_extension_ignore_case;
+
 pub struct ForgeValidator;
 
 impl super::Validator for ForgeValidator {
@@ -37,7 +39,10 @@ impl super::Validator for ForgeValidator {
             ));
         }
 
-        if !archive.file_names().any(|name| name.ends_with(".class")) {
+        if !archive
+            .file_names()
+            .any(|name| match_extension_ignore_case(name, &[".class"]))
+        {
             return Ok(ValidationResult::Warning(
                 "Forge mod file is a source file!",
             ));
@@ -82,7 +87,10 @@ impl super::Validator for LegacyForgeValidator {
             ));
         };
 
-        if !archive.file_names().any(|name| name.ends_with(".class")) {
+        if !archive
+            .file_names()
+            .any(|name| match_extension_ignore_case(name, &[".class"]))
+        {
             return Ok(ValidationResult::Warning(
                 "Forge mod file is a source file!",
             ));

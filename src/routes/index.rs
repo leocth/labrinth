@@ -2,6 +2,7 @@ use actix_web::{get, HttpResponse};
 use serde_json::json;
 
 #[get("/")]
+#[allow(clippy::unused_async)]
 pub async fn index_get() -> HttpResponse {
     let data = json!({
         "name": "modrinth-labrinth",

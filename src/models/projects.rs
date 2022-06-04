@@ -119,7 +119,7 @@ impl From<QueryProject> for Project {
             downloads: m.downloads as u32,
             followers: m.follows as u32,
             categories: data.categories,
-            versions: data.versions.into_iter().map(|v| v.into()).collect(),
+            versions: data.versions.into_iter().map(Into::into).collect(),
             icon_url: m.icon_url,
             issues_url: m.issues_url,
             source_url: m.source_url,
@@ -267,13 +267,14 @@ impl ProjectStatus {
 
     pub fn is_hidden(&self) -> bool {
         match self {
-            ProjectStatus::Approved => false,
-            ProjectStatus::Rejected => true,
-            ProjectStatus::Draft => true,
-            ProjectStatus::Unlisted => false,
-            ProjectStatus::Processing => true,
-            ProjectStatus::Unknown => true,
-            ProjectStatus::Archived => false,
+            ProjectStatus::Rejected
+            | ProjectStatus::Draft
+            | ProjectStatus::Processing
+            | ProjectStatus::Unknown => true,
+
+            ProjectStatus::Approved
+            | ProjectStatus::Archived
+            | ProjectStatus::Unlisted => false,
         }
     }
 
@@ -336,7 +337,6 @@ impl From<QueryVersion> for Version {
             date_published: data.date_published,
             downloads: data.downloads as u32,
             version_type: match data.version_type.as_str() {
-                "release" => VersionType::Release,
                 "beta" => VersionType::Beta,
                 "alpha" => VersionType::Alpha,
                 _ => VersionType::Release,
@@ -465,7 +465,6 @@ impl DependencyType {
 
     pub fn from_str(string: &str) -> DependencyType {
         match string {
-            "required" => DependencyType::Required,
             "optional" => DependencyType::Optional,
             "incompatible" => DependencyType::Incompatible,
             _ => DependencyType::Required,

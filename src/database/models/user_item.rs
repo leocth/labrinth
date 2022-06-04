@@ -1,4 +1,5 @@
 use super::ids::{ProjectId, UserId};
+use futures::TryStreamExt;
 use time::OffsetDateTime;
 
 pub struct User {
@@ -161,7 +162,6 @@ impl User {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-        use futures::stream::TryStreamExt;
 
         let user_ids_parsed: Vec<i64> =
             user_ids.into_iter().map(|x| x.0).collect();
@@ -202,7 +202,6 @@ impl User {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-        use futures::stream::TryStreamExt;
 
         let projects = sqlx::query!(
             "
@@ -228,7 +227,6 @@ impl User {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres> + Copy,
     {
-        use futures::stream::TryStreamExt;
 
         let projects = sqlx::query!(
             "
@@ -277,7 +275,6 @@ impl User {
         .execute(&mut *transaction)
         .await?;
 
-        use futures::TryStreamExt;
         let notifications: Vec<i64> = sqlx::query!(
             "
             SELECT n.id FROM notifications n
@@ -357,7 +354,6 @@ impl User {
         id: UserId,
         transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     ) -> Result<Option<()>, sqlx::error::Error> {
-        use futures::TryStreamExt;
         let projects: Vec<ProjectId> = sqlx::query!(
             "
             SELECT m.id FROM mods m

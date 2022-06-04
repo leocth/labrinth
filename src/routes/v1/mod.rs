@@ -1,3 +1,5 @@
+#![allow(clippy::pedantic)] // don't try to improve legacy APIs
+
 use actix_web::web;
 
 mod moderation;

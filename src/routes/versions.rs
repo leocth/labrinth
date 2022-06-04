@@ -64,8 +64,7 @@ pub async fn version_list(
             .filter(|version| {
                 filters
                     .featured
-                    .map(|featured| featured == version.featured)
-                    .unwrap_or(true)
+                    .map_or(true, |featured| featured == version.featured)
             })
             .map(Version::from)
             .collect::<Vec<_>>();
@@ -77,36 +76,27 @@ pub async fn version_list(
             && !versions.is_empty()
             && filters.featured.unwrap_or(false)
         {
-            let (loaders, game_versions) = futures::join!(
+            let (loaders, game_versions) = futures::try_join!(
                 database::models::categories::Loader::list(&**pool),
                 database::models::categories::GameVersion::list_filter(
                     None,
                     Some(true),
                     &**pool
                 )
-            );
+            )?;
 
-            let (loaders, game_versions) = (loaders?, game_versions?);
+            for (version, loader) in game_versions.iter().zip(loaders.iter()) {
+                let ver = versions
+                    .iter()
+                    .find(|v| {
+                        v.game_versions.contains(&version.version)
+                            && v.loaders.contains(&loader.loader)
+                    });
 
-            let mut joined_filters = Vec::new();
-            for game_version in &game_versions {
-                for loader in &loaders {
-                    joined_filters.push((game_version, loader))
+                if let Some(ver) = ver {
+                    response.push(Version::from(ver.clone()));
                 }
             }
-
-            joined_filters.into_iter().for_each(|filter| {
-                versions
-                    .iter()
-                    .find(|version| {
-                        version.game_versions.contains(&filter.0.version)
-                            && version.loaders.contains(&filter.1.loader)
-                    })
-                    .map(|version| {
-                        response.push(Version::from(version.clone()))
-                    })
-                    .unwrap_or(());
-            });
 
             if response.is_empty() {
                 versions
@@ -137,7 +127,7 @@ pub async fn versions_get(
     let version_ids =
         serde_json::from_str::<Vec<models::ids::VersionId>>(&*ids.ids)?
             .into_iter()
-            .map(|x| x.into())
+            .map(Into::into)
             .collect();
     let versions_data =
         database::models::Version::get_many_full(version_ids, &**pool).await?;
@@ -215,15 +205,14 @@ pub async fn version_edit(
                 &**pool,
             )
             .await?;
-        let permissions;
 
-        if let Some(member) = team_member {
-            permissions = Some(member.permissions)
+        let permissions = if let Some(member) = team_member {
+            Some(member.permissions)
         } else if user.role.is_mod() {
-            permissions = Some(Permissions::ALL)
+            Some(Permissions::ALL)
         } else {
-            permissions = None
-        }
+            None
+        };
 
         if let Some(perms) = permissions {
             if !perms.contains(Permissions::UPLOAD_VERSION) {
@@ -307,8 +296,8 @@ pub async fn version_edit(
                 let builders = dependencies
                     .iter()
                     .map(|x| database::models::version_item::DependencyBuilder {
-                        project_id: x.project_id.map(|x| x.into()),
-                        version_id: x.version_id.map(|x| x.into()),
+                        project_id: x.project_id.map(Into::into),
+                        version_id: x.version_id.map(Into::into),
                         file_name: x.file_name.clone(),
                         dependency_type: x.dependency_type.to_string(),
                     })

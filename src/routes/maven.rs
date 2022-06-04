@@ -282,8 +282,10 @@ pub async fn version_file_sha1(
     Ok(find_file(&project_id, &project, &version, &file)
         .and_then(|file| file.hashes.get("sha1"))
         .and_then(|hash_bytes| std::str::from_utf8(hash_bytes).ok())
-        .map(|hash_str| HttpResponse::Ok().body(hash_str.to_string()))
-        .unwrap_or_else(|| HttpResponse::NotFound().body("")))
+        .map_or_else(
+            || HttpResponse::NotFound().body(""),
+            |hash_str| HttpResponse::Ok().body(hash_str.to_string()),
+        ))
 }
 
 #[get("maven/modrinth/{id}/{versionnum}/{file}.sha512")]
@@ -336,9 +338,12 @@ pub async fn version_file_sha512(
         return Ok(HttpResponse::NotFound().body(""));
     };
 
-    Ok(find_file(&project_id, &project, &version, &file)
+    let resp = find_file(&project_id, &project, &version, &file)
         .and_then(|file| file.hashes.get("sha512"))
         .and_then(|hash_bytes| std::str::from_utf8(hash_bytes).ok())
-        .map(|hash_str| HttpResponse::Ok().body(hash_str.to_string()))
-        .unwrap_or_else(|| HttpResponse::NotFound().body("")))
+        .map_or_else(
+            || HttpResponse::NotFound().body(""),
+            |hash_str| HttpResponse::Ok().body(hash_str.to_string()),
+        );
+    Ok(resp)
 }

@@ -18,7 +18,7 @@ use crate::validate::{validate_file, ValidationResult};
 use actix_multipart::{Field, Multipart};
 use actix_web::web::Data;
 use actix_web::{post, HttpRequest, HttpResponse};
-use futures::stream::StreamExt;
+use futures::stream::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use time::OffsetDateTime;
@@ -260,8 +260,8 @@ async fn version_create_inner(
                 .dependencies
                 .iter()
                 .map(|d| models::version_item::DependencyBuilder {
-                    version_id: d.version_id.map(|x| x.into()),
-                    project_id: d.project_id.map(|x| x.into()),
+                    version_id: d.version_id.map(Into::into),
+                    project_id: d.project_id.map(Into::into),
                     dependency_type: d.dependency_type.to_string(),
                     file_name: None,
                 })
@@ -355,8 +355,6 @@ async fn version_create_inner(
     )
     .fetch_one(&mut *transaction)
     .await?;
-
-    use futures::stream::TryStreamExt;
 
     let users = sqlx::query!(
         "
@@ -623,10 +621,9 @@ async fn upload_file_to_version_inner(
         return Err(CreateError::InvalidInput(
             "At least one file must be specified".to_string(),
         ));
-    } else {
-        for file_builder in file_builders {
-            file_builder.insert(version_id, &mut *transaction).await?;
-        }
+    }
+    for file_builder in file_builders {
+        file_builder.insert(version_id, &mut *transaction).await?;
     }
 
     Ok(HttpResponse::Ok().into())
@@ -722,7 +719,7 @@ pub async fn upload_file(
                         == file
                             .hashes
                             .get(&PackFileHash::Sha1)
-                            .map(|x| x.as_bytes())
+                            .map(String::as_bytes)
                 }) {
                     if let Some(project_id) = dep.project_id {
                         if let Some(version_id) = dep.version_id {

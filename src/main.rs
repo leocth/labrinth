@@ -1,4 +1,13 @@
 #![warn(clippy::pedantic)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::wildcard_imports,
+    clippy::unreadable_literal,
+    clippy::too_many_lines,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::option_option,
+)]
 
 use crate::file_hosting::S3Host;
 use crate::ratelimit::errors::ARError;
@@ -26,6 +35,7 @@ mod util;
 mod validate;
 
 #[derive(Debug, Options)]
+#[allow(clippy::struct_excessive_bools)]
 struct Config {
     #[options(help = "Print help message")]
     help: bool,
@@ -261,19 +271,18 @@ async fn main() -> std::io::Result<()> {
 
 // This is so that env vars not used immediately don't panic at runtime
 fn check_env_vars() -> bool {
-    let mut failed = false;
-
-    fn check_var<T: std::str::FromStr>(var: &'static str) -> bool {
+    fn check_var<T: std::str::FromStr>(var: &str) -> bool {
         let check = parse_var::<T>(var).is_none();
         if check {
             warn!(
-                "Variable `{}` missing in dotenv or not of type `{}`",
-                var,
+                "Variable `{var}` missing in dotenv or not of type `{}`",
                 std::any::type_name::<T>()
             );
         }
         check
     }
+
+    let mut failed = false;
 
     if parse_strings_from_var("RATE_LIMIT_IGNORE_IPS").is_none() {
         warn!("Variable `RATE_LIMIT_IGNORE_IPS` missing in dotenv or not a json array of strings");
