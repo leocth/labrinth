@@ -101,3 +101,117 @@ impl super::Validator for LegacyForgeValidator {
         Ok(ValidationResult::Pass)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    mod modern {
+        use crate::validate::{
+            test_util::make_dummy_zip, ValidationResult, Validator,
+        };
+        use crate::validate::forge::ForgeValidator;
+
+        #[test]
+        fn all_clear() {
+            let mut zip = make_dummy_zip(&[
+                "META-INF/mods.toml",
+                "Test.class",
+            ])
+            .unwrap();
+
+            assert_eq!(
+                ForgeValidator.validate(&mut zip).unwrap(),
+                ValidationResult::Pass
+            );
+        }
+        #[test]
+        fn weird_extensions() {
+            let mut zip = make_dummy_zip(&[
+                "META-INF/mods.toml",
+                "TesT.CLaSS",
+            ])
+            .unwrap();
+
+            assert_eq!(
+                ForgeValidator.validate(&mut zip).unwrap(),
+                ValidationResult::Pass
+            );
+        }
+        #[test]
+        fn missing_mods_toml() {
+            let mut zip =
+                make_dummy_zip(&["Test.class"]).unwrap();
+
+            assert_eq!(
+                ForgeValidator.validate(&mut zip).unwrap(),
+                ValidationResult::Warning("No mods.toml present for Forge file.")
+            );
+        }
+        #[test]
+        fn missing_class_files() {
+            let mut zip =
+                make_dummy_zip(&["META-INF/mods.toml"]).unwrap();
+
+            assert_eq!(
+                ForgeValidator.validate(&mut zip).unwrap(),
+                ValidationResult::Warning("Forge mod file is a source file!")
+            );
+        }
+    }
+    mod legacy {
+        use crate::validate::{
+            test_util::make_dummy_zip, ValidationResult, Validator,
+        };
+        use crate::validate::forge::LegacyForgeValidator;
+
+        #[test]
+        fn all_clear() {
+            let mut zip = make_dummy_zip(&[
+                "mcmod.info",
+                "Test.class",
+            ])
+            .unwrap();
+
+            assert_eq!(
+                LegacyForgeValidator.validate(&mut zip).unwrap(),
+                ValidationResult::Pass
+            );
+        }
+        #[test]
+        fn weird_extensions() {
+            let mut zip = make_dummy_zip(&[
+                "mcmod.info",
+                "TesT.CLaSS",
+            ])
+            .unwrap();
+
+            assert_eq!(
+                LegacyForgeValidator.validate(&mut zip).unwrap(),
+                ValidationResult::Pass
+            );
+        }
+        #[test]
+        fn missing_mcmod_info() {
+            let mut zip =
+                make_dummy_zip(&["Test.class"]).unwrap();
+
+
+            assert_eq!(
+                LegacyForgeValidator.validate(&mut zip).unwrap(),
+                ValidationResult::Warning("Forge mod file does not contain mcmod.info!")
+            );
+        }
+        #[test]
+        fn missing_class_files() {
+            let mut zip =
+                make_dummy_zip(&["mcmod.info"]).unwrap();
+
+            assert_eq!(
+                LegacyForgeValidator.validate(&mut zip).unwrap(),
+                ValidationResult::Warning("Forge mod file is a source file!")
+            );
+        }
+    }
+
+
+}

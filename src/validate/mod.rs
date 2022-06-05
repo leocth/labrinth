@@ -15,6 +15,8 @@ mod forge;
 mod liteloader;
 mod pack;
 mod quilt;
+#[cfg(test)]
+mod test_util;
 
 #[derive(Error, Debug)]
 pub enum ValidationError {
@@ -30,7 +32,7 @@ pub enum ValidationError {
     Blocking(#[from] actix_web::error::BlockingError),
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum ValidationResult {
     /// File should be marked as primary with pack file data
     PassWithPackData(PackFormat),
@@ -157,5 +159,57 @@ fn game_version_supported(
 }
 
 fn match_extension_ignore_case(name: &str, exts: &[&str]) -> bool {
-    exts.iter().any(|ext| name.rfind(ext).is_some())
+    exts.iter().any(|ext| {
+        name.chars()
+            .rev()
+            .zip(ext.chars().rev())
+            .all(|(nc, ec)| nc.eq_ignore_ascii_case(&ec))
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::validate::match_extension_ignore_case;
+
+    #[test]
+    fn matching_extensions_works() {
+        assert!(match_extension_ignore_case("quilt.mod.json", &[".json"]));
+        assert!(match_extension_ignore_case(
+            "quilt.mod.json",
+            &[".mod.json"]
+        ));
+        assert!(match_extension_ignore_case(
+            "quilt.mod.json",
+            &["quilt.mod.json"]
+        ));
+    }
+    #[test]
+    fn wrong_extension() {
+        assert!(!match_extension_ignore_case("quilt.mod.json", &[".toml"]));
+        assert!(!match_extension_ignore_case("quilt.mod.json", &[".class"]));
+        assert!(!match_extension_ignore_case("mods.toml", &[".yaml"]));
+        assert!(!match_extension_ignore_case("example.refmap.json", &[".class"]));
+    }
+    #[test]
+    fn multiple_extensions() {
+        assert!(match_extension_ignore_case(
+            "quilt.mod.json",
+            &[".not.gonna.match", ".json"]
+        ));
+        assert!(match_extension_ignore_case(
+            "Test$1$2$3.class",
+            &[".refmap.json", ".class"]
+        ));
+    }
+    #[test]
+    fn multiple_wrong_extensions() {
+        assert!(!match_extension_ignore_case(
+            "quilt.mod.json",
+            &[".neither.of", ".these.matches"]
+        ));
+        assert!(!match_extension_ignore_case(
+            "Test.class",
+            &[".java", ".kt", ".scala", ".groovy"]
+        ));
+    }
 }

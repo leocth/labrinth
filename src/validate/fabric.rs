@@ -50,3 +50,62 @@ impl super::Validator for FabricValidator {
         Ok(ValidationResult::Pass)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::validate::{
+        test_util::make_dummy_zip, ValidationError, ValidationResult, Validator,
+    };
+
+    use super::FabricValidator;
+
+    #[test]
+    fn all_clear() {
+        let mut zip = make_dummy_zip(&[
+            "fabric.mod.json",
+            "Test.class",
+            "example.refmap.json",
+        ])
+        .unwrap();
+
+        assert_eq!(
+            FabricValidator.validate(&mut zip).unwrap(),
+            ValidationResult::Pass
+        );
+    }
+    #[test]
+    fn weird_extensions() {
+        let mut zip = make_dummy_zip(&[
+            "fabric.mod.json",
+            "test.clASS",
+            "EXAMPLE.ReFMaP.JSon",
+        ])
+        .unwrap();
+
+        assert_eq!(
+            FabricValidator.validate(&mut zip).unwrap(),
+            ValidationResult::Pass
+        );
+    }
+    #[test]
+    fn missing_fmj() {
+        let mut zip =
+            make_dummy_zip(&["Test.class", "example.refmap.json"]).unwrap();
+
+        assert!(matches!(
+            FabricValidator.validate(&mut zip).unwrap_err(),
+            ValidationError::InvalidInput(error)
+            if error == "No fabric.mod.json present for Fabric file."
+        ));
+    }
+    #[test]
+    fn missing_refmap_and_class_files() {
+        let mut zip =
+            make_dummy_zip(&["fabric.mod.json"]).unwrap();
+
+        assert_eq!(
+            FabricValidator.validate(&mut zip).unwrap(),
+            ValidationResult::Warning("Fabric mod file is a source file!")
+        );
+    }
+}

@@ -3,7 +3,7 @@ use crate::parse_strings_from_var;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Serialize, Deserialize, Validate, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Validate, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PackFormat {
     pub game: String,
@@ -19,7 +19,7 @@ pub struct PackFormat {
     pub dependencies: std::collections::HashMap<PackDependency, String>,
 }
 
-#[derive(Serialize, Deserialize, Validate, Eq, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Validate, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PackFile {
     pub path: String,
@@ -58,7 +58,7 @@ fn validate_download_url(
     Ok(())
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
 #[serde(rename_all = "camelCase", from = "String")]
 pub enum PackFileHash {
     Sha1,
@@ -76,14 +76,14 @@ impl From<String> for PackFileHash {
     }
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
 #[serde(rename_all = "camelCase")]
 pub enum EnvType {
     Client,
     Server,
 }
 
-#[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Hash, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum PackDependency {
     Forge,

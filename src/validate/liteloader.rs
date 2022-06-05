@@ -36,3 +36,32 @@ impl super::Validator for LiteLoaderValidator {
         Ok(ValidationResult::Pass)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::validate::{
+        test_util::make_dummy_zip, ValidationError, ValidationResult, Validator,
+    };
+
+    use super::LiteLoaderValidator;
+
+    #[test]
+    fn all_clear() {
+        let mut zip = make_dummy_zip(&["litemod.json"]).unwrap();
+
+        assert_eq!(
+            LiteLoaderValidator.validate(&mut zip).unwrap(),
+            ValidationResult::Pass
+        );
+    }
+    #[test]
+    fn missing_litemod_json() {
+        let mut zip = make_dummy_zip(&[]).unwrap();
+
+        assert!(matches!(
+            LiteLoaderValidator.validate(&mut zip).unwrap_err(),
+            ValidationError::InvalidInput(error)
+            if error == "No litemod.json present for LiteLoader file."
+        ));
+    }
+}

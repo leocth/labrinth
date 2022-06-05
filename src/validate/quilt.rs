@@ -50,3 +50,62 @@ impl super::Validator for QuiltValidator {
         Ok(ValidationResult::Pass)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::validate::{
+        test_util::make_dummy_zip, ValidationError, ValidationResult, Validator,
+    };
+
+    use super::QuiltValidator;
+
+    #[test]
+    fn all_clear() {
+        let mut zip = make_dummy_zip(&[
+            "quilt.mod.json",
+            "Test.class",
+            "example.refmap.json",
+        ])
+        .unwrap();
+
+        assert_eq!(
+            QuiltValidator.validate(&mut zip).unwrap(),
+            ValidationResult::Pass
+        );
+    }
+    #[test]
+    fn weird_extensions() {
+        let mut zip = make_dummy_zip(&[
+            "quilt.mod.json",
+            "TEST.CLASS",
+            "EXAMPLE.ReFMaP.JSon",
+        ])
+        .unwrap();
+
+        assert_eq!(
+            QuiltValidator.validate(&mut zip).unwrap(),
+            ValidationResult::Pass
+        );
+    }
+    #[test]
+    fn missing_qmj() {
+        let mut zip =
+            make_dummy_zip(&["Test.class", "example.refmap.json"]).unwrap();
+
+        assert!(matches!(
+            QuiltValidator.validate(&mut zip).unwrap_err(),
+            ValidationError::InvalidInput(error)
+            if error == "No quilt.mod.json present for Quilt file."
+        ));
+    }
+    #[test]
+    fn missing_refmap_and_class_files() {
+        let mut zip =
+            make_dummy_zip(&["quilt.mod.json"]).unwrap();
+
+        assert_eq!(
+            QuiltValidator.validate(&mut zip).unwrap(),
+            ValidationResult::Warning("Quilt mod file is a source file!")
+        );
+    }
+}
